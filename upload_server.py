@@ -1,24 +1,51 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import cgi
+import subprocess
+import os
 
 class S(BaseHTTPRequestHandler):
     def _set_response(self):
         self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
 
     def do_GET(self):
         self._set_response()
         self.wfile.write("""
+            <!DOCTYPE html>
             <html>
                 <head>
+                    <link rel="stylesheet" type="text/css" href="estilos.css">
                     <title>Subir Archivo</title>
+                    <style>
+                        /* Estilo opcional para centrar el formulario en la página */
+                        body {
+                            background-color: #add8e6;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 10vh;
+                            margin: 0;
+                        }
+                        form {
+                            text-align: center;
+                        }
+                    </style>
+                    <script>
+                        function limpiarArchivo() {
+                            // Selecciona el input de tipo file por su nombre y limpia su valor
+                            document.getElementsByName("file")[0].value = "";
+                        }
+                    </script>                    
                 </head>
                 <body>
-                    <form method="post" enctype="multipart/form-data">
-                        File: <input name="file" type="file">
-                        <input type="submit" value="Subir">
-                    </form>
+                    <div class="container">             
+                        <form method="post" enctype="multipart/form-data">
+                            Buscar archivo: <input name="file" type="file">
+                            <input type="submit" value="Subir archivo">
+                            <input type="button" value="Limpiar archivo" onclick="limpiarArchivo()">
+                        </form>
+                    </div>
                 </body>
             </html>
         """.encode('utf-8'))
@@ -28,7 +55,7 @@ class S(BaseHTTPRequestHandler):
             fp=self.rfile,
             headers=self.headers,
             environ={'REQUEST_METHOD': 'POST',
-                     'CONTENT_TYPE': self.headers['Content-Type'],
+                     'CONTENT_TYPE': self.headers['Content-Type, text/html, charset=utf-8'],
                      })
 
         # Recibe el archivo subido y lo guarda en el directorio actual
@@ -39,15 +66,32 @@ class S(BaseHTTPRequestHandler):
             with open(file_name, "wb") as f:
                 f.write(file_data)
             self._set_response()
-            self.wfile.write("Archivo {} subido exitosamente\n".format(file_name).encode('utf-8'))
+            self.wfile.write('''
+                <div class="container" style="text-align: center; background-color: #add8e7;">
+                    El archivo; "{}" Fue subido exitosamente.<br>
+                    <input type="button" value="Regresar a la página anterior" onclick="javascript:history.back()"><br>
+                </div>
+                '''.format(file_name).encode('utf-8'))
+
         else:
             self._set_response()
-            self.wfile.write("No se subio ningun archivo\n".encode('utf-8'))
+            self.wfile.write('''
+                <div class="container" style="text-align: center; background-color: #ffcccc;">
+                    No se subió ningún archivo.<br>
+                    <input type="button" value="Regresar a la página anterior" onclick="javascript:history.back()"><br>
+                </div>
+            '''.encode('utf-8'))
 
-def run(server_class=HTTPServer, handler_class=S, port=8080):
+
+def run(server_class=HTTPServer, handler_class=S, port=7080):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
-    print(f"Starting httpd server on port {port}...")
+    ip_local = subprocess.check_output("hostname -I | cut -f1 -d' '",shell=True).decode('utf-8').strip()
+    ruta = input('Ingresa la ruta donde se guardarán los archivos: ').strip()
+    os.chdir(ruta)
+    print(f"Los archivos se guardaran en la ruta; {ruta}")
+    print(f"Exponiendo httpd en la ip y puerto; {ip_local}:{port}")
+    
     httpd.serve_forever()
 
 if __name__ == "__main__":
@@ -57,6 +101,3 @@ if __name__ == "__main__":
         run(port=int(argv[1]))
     else:
         run()
-
-
-
