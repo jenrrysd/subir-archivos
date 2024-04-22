@@ -86,7 +86,7 @@ class S(BaseHTTPRequestHandler):
 def run(server_class=HTTPServer, handler_class=S, port=7080):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
-    ip_local = subprocess.check_output("hostname -I | cut -f1 -d' '",shell=True).decode('utf-8').strip()
+    ip_local = subprocess.check_output("ip route | awk '{print $9}' | head -1",shell=True).decode('utf-8').strip()
     ruta = input('Ingresa la ruta donde se guardarán los archivos: ').strip()
     os.chdir(ruta)
     print(f"Los archivos se guardaran en la ruta; {ruta}")
